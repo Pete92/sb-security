@@ -3,6 +3,7 @@ package com.example.securitydemo;
 import com.example.securitydemo.jwt.AuthEntryPointJwt;
 import com.example.securitydemo.jwt.AuthTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -40,28 +41,54 @@ public class SecurityConfig {
         return new AuthTokenFilter();
     }
 
+//    @Bean
+//    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+//        http.authorizeHttpRequests((requests) ->
+//                requests.requestMatchers("/h2-console/**").permitAll()
+//                        .requestMatchers("/signin").permitAll()
+//                        .anyRequest().authenticated())
+//                .csrf(csrf -> csrf
+//                        .ignoringRequestMatchers("/h2-console/**")
+//                )
+//                .headers(headers -> headers
+//                    .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+//                .sessionManagement(session ->
+//                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//                .exceptionHandling(exception ->
+//                        exception.authenticationEntryPoint(unauthorizedHandler) // Use mine exception handler
+//                )
+//                .addFilterBefore(authenticationJwtTokenFilter(),
+//                        UsernamePasswordAuthenticationFilter.class
+//                );
+//
+//        return http.build();
+//    }
+
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests((requests) ->
-                requests.requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/api/signin").permitAll()
-                        .anyRequest().authenticated())
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**")
+        http.authorizeHttpRequests(authorizeRequests ->
+                authorizeRequests.requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/signin").permitAll()
+                        .anyRequest().authenticated());
+        http.sessionManagement(
+                session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS)
+        );
+        http.exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler));
+        http.headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions
+                        .sameOrigin()
                 )
-                .headers(headers -> headers
-                    .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint(unauthorizedHandler) // Use mine exception handler
-                )
-                .addFilterBefore(authenticationJwtTokenFilter(),
-                        UsernamePasswordAuthenticationFilter.class
-                );
+        );
+        http.csrf(csrf -> csrf.disable());
+        http.addFilterBefore(authenticationJwtTokenFilter(),
+                UsernamePasswordAuthenticationFilter.class);
+
 
         return http.build();
     }
+
 
 //    @Bean
 //    public UserDetailsService userDetailsService() {
@@ -77,20 +104,28 @@ public class SecurityConfig {
 //    }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user1 = User.withUsername("user")
-                .password(passwordEncoder().encode("user"))
-                .roles("USER")
-                .build();
+    public UserDetailsService userDetailsService(DataSource dataSource) {
+        return new JdbcUserDetailsManager(dataSource);
+    }
 
-        UserDetails user2 = User.withUsername("admin")
-                .password(passwordEncoder().encode("admin"))
-                .roles("ADMIN")
-                .build();
-        JdbcUserDetailsManager userDetailsManager = new JdbcUserDetailsManager(dataSource);
-        userDetailsManager.createUser(user1);
-        userDetailsManager.createUser(user2);
-        return userDetailsManager;
+    @Bean
+    public CommandLineRunner initData(UserDetailsService userDetailsService) {
+        return args -> {
+            JdbcUserDetailsManager manager = (JdbcUserDetailsManager) userDetailsService;
+            UserDetails user1 = User.withUsername("user")
+                    .password(passwordEncoder().encode("user"))
+                    .roles("USER")
+                    .build();
+            UserDetails admin = User.withUsername("admin")
+                    //.password(passwordEncoder().encode("adminPass"))
+                    .password(passwordEncoder().encode("admin"))
+                    .roles("ADMIN")
+                    .build();
+
+            JdbcUserDetailsManager userDetailsManager = new JdbcUserDetailsManager(dataSource);
+            userDetailsManager.createUser(user1);
+            userDetailsManager.createUser(admin);
+        };
     }
 
     @Bean
