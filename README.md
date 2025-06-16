@@ -11,20 +11,17 @@ Tämä projekti on esimerkki siitä, miten toteuttaa JWT-autentikointi Spring Se
 - API-endpointit autentikointiin ja roolipohjaisiin testeihin
 
 ## 📁 Projektin rakenne
-src/main/java/com/example/securitydemo/
-````
-├── config/
-│   └── SecurityConfig.java          # Spring Security -konfiguraatio
-│
-├── security/
-│   ├── AuthEntryPointJwt.java       # 401 Unauthorized -poikkeusten käsittely
-│   ├── AuthTokenFilter.java         # JWT-suodatin, joka tarkistaa tokenin jokaisessa pyynnössä
-│   └── JwtUtils.java                # Apuluokka JWT:n generointiin ja validointiin
-│
-└── controller/
-    └── Controller.java              # API-päätepiste kirjautumista ja testikutsuja varten
-````
 
+````
+src/main/java/com/example/securitydemo/
+├── SecurityConfig.java              # Spring Security -konfiguraatio
+├── Controller.java                  # API-päätepiste kirjautumista ja testikutsuja varten
+│
+└── security/
+    ├── AuthEntryPointJwt.java       # 401 Unauthorized -poikkeusten käsittely
+    ├── AuthTokenFilter.java         # JWT-suodatin, joka tarkistaa tokenin jokaisessa pyynnössä
+    └── JwtUtils.java                # Apuluokka JWT:n generointiin ja validointiin
+````
 
 ## 🧑‍💻 Testikäyttäjät
 
